@@ -133,7 +133,7 @@ static const char *dmi_string(const struct dmi_header *dm, uint8_t s)
 }
 
 /* shift is 0 if the value is in bytes, 1 if it is in kilobytes */
-static void dmi_print_memory_size(const char *attr, int slot_num, u64 code, int shift)
+static void dmi_print_memory_size(const char *attr_prefix, const char *attr_suffix, int slot_num, u64 code, int shift)
 {
         uint64_t capacity;
 
@@ -143,9 +143,9 @@ static void dmi_print_memory_size(const char *attr, int slot_num, u64 code, int 
                 capacity = capacity << 10;
 
         if (slot_num >= 0)
-                printf("%s%u=%lu\n", attr, slot_num, capacity);
+                printf("%s_%u_%s=%lu\n", attr_prefix, slot_num, attr_suffix, capacity);
         else
-                printf("%s=%lu\n", attr, capacity);
+                printf("%s_%s=%lu\n", attr_prefix, attr_suffix, capacity);
 }
 
 /*
@@ -204,19 +204,19 @@ static const char *dmi_memory_array_ec_type(uint8_t code)
  * 7.18 Memory Device (Type 17)
  */
 
-static void dmi_memory_device_width(const char *attr, unsigned int slot_num, uint16_t code)
+static void dmi_memory_device_width(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
 {
         /*
          * If no memory module is present, width may be 0
          */
         if (code != 0xFFFF && code != 0)
-                printf("%s%u=%u\n", attr, slot_num, code);
+                printf("%s_%u_%s=%u\n", attr_prefix, slot_num, attr_suffix, code);
 }
 
 static void dmi_memory_device_size(unsigned int slot_num, uint16_t code)
 {
         if (code == 0) {
-                printf("MEMORY_DEVICE_PRESENT%u=0\n", slot_num);
+                printf("MEMORY_DEVICE_%u_PRESENT=0\n", slot_num);
                 return;
         } else if (code == 0xFFFF) {
                 return;
@@ -224,7 +224,7 @@ static void dmi_memory_device_size(unsigned int slot_num, uint16_t code)
                 u64 s = { .l = code & 0x7FFF };
                 if (!(code & 0x8000))
                         s.l <<= 10;
-                dmi_print_memory_size("MEMORY_DEVICE_SIZE", slot_num, s, 1);
+                dmi_print_memory_size("MEMORY_DEVICE", "SIZE", slot_num, s, 1);
         }
 }
 
@@ -244,17 +244,17 @@ static void dmi_memory_device_extended_size(unsigned int slot_num, uint32_t code
         else
                 capacity = code * 1024^4;
 
-        printf("MEMORY_DEVICE_SIZE%u=%lu\n", slot_num, capacity);
+        printf("MEMORY_DEVICE_%u_SIZE=%lu\n", slot_num, capacity);
 }
 
-static void dmi_memory_voltage_value(const char *attr, unsigned int slot_num, uint16_t code)
+static void dmi_memory_voltage_value(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
 {
         if (code == 0)
                 return;
         if (code % 100)
-                printf("%s%u=%g\n", attr, slot_num, (float)code / 1000);
+                printf("%s_%u_%s=%g\n", attr_prefix, slot_num, attr_suffix, (float)code / 1000);
         else
-                printf("%s%u=%.1f\n", attr, slot_num, (float)code / 1000);
+                printf("%s_%u_%s=%.1f\n", attr_prefix, slot_num, attr_suffix, (float)code / 1000);
 }
 
 static const char *dmi_memory_device_form_factor(uint8_t code)
@@ -287,9 +287,9 @@ static const char *dmi_memory_device_form_factor(uint8_t code)
 static void dmi_memory_device_set(unsigned int slot_num, uint8_t code)
 {
         if (code == 0xFF)
-                printf("MEMORY_DEVICE_SET%u=%s\n", slot_num, "Unknown");
+                printf("MEMORY_DEVICE_%u_SET=%s\n", slot_num, "Unknown");
         else if (code != 0)
-                printf("MEMORY_DEVICE_SET%u=%u\n", slot_num, code);
+                printf("MEMORY_DEVICE_%u_SET=%u\n", slot_num, code);
 }
 
 static const char *dmi_memory_device_type(uint8_t code)
@@ -359,7 +359,7 @@ static void dmi_memory_device_type_detail(unsigned int slot_num, uint16_t code)
         char list[172];		/* Update length if you touch the array above */
 
         if ((code & 0xFFFE) == 0)
-                printf("MEMORY_DEVICE_TYPE_DETAIL%u=%s\n", slot_num, "None");
+                printf("MEMORY_DEVICE_%u_TYPE_DETAIL=%s\n", slot_num, "None");
         else
         {
                 int i, off = 0;
@@ -369,14 +369,14 @@ static void dmi_memory_device_type_detail(unsigned int slot_num, uint16_t code)
                         if (code & (1 << i))
                                 off += sprintf(list + off, off ? " %s" : "%s",
                                                detail[i - 1]);
-                printf("MEMORY_DEVICE_TYPE_DETAIL%u=%s\n", slot_num, list);
+                printf("MEMORY_DEVICE_%u_TYPE_DETAIL=%s\n", slot_num, list);
         }
 }
 
-static void dmi_memory_device_speed(const char *attr, unsigned int slot_num, uint16_t code)
+static void dmi_memory_device_speed(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
 {
         if (code != 0)
-                printf("%s%u=%u\n", attr, slot_num, code);
+                printf("%s_%u_%s=%u\n", attr_prefix, slot_num, attr_suffix, code);
 }
 
 static void dmi_memory_technology(unsigned int slot_num, uint8_t code)
@@ -392,9 +392,9 @@ static void dmi_memory_technology(unsigned int slot_num, uint8_t code)
                 "Intel Optane DC persistent memory" /* 0x07 */
         };
         if (code >= 0x01 && code <= 0x07)
-                printf("MEMORY_DEVICE_MEMORY_TECHNOLOGY%u=%s\n", slot_num, technology[code - 0x01]);
+                printf("MEMORY_DEVICE_%u_MEMORY_TECHNOLOGY=%s\n", slot_num, technology[code - 0x01]);
         else
-                printf("MEMORY_DEVICE_MEMORY_TECHNOLOGY%u=%s\n", slot_num, out_of_spec);
+                printf("MEMORY_DEVICE_%u_MEMORY_TECHNOLOGY=%s\n", slot_num, out_of_spec);
 }
 
 static void dmi_memory_operating_mode_capability(unsigned int slot_num, uint16_t code)
@@ -417,35 +417,35 @@ static void dmi_memory_operating_mode_capability(unsigned int slot_num, uint16_t
                         if (code & (1 << i))
                                 off += sprintf(list + off, off ? " %s" : "%s",
                                                mode[i - 1]);
-                printf("MEMORY_DEVICE_MEMORY_OPERATING_MODE_CAPABILITY%u=%s\n", slot_num, list);
+                printf("MEMORY_DEVICE_%u_MEMORY_OPERATING_MODE_CAPABILITY=%s\n", slot_num, list);
         }
 }
 
-static void dmi_memory_manufacturer_id(const char *attr, unsigned int slot_num, uint16_t code)
+static void dmi_memory_manufacturer_id(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
 {
         /* 7.18.8 */
         /* 7.18.10 */
         /* LSB is 7-bit Odd Parity number of continuation codes */
         if (code != 0)
-                printf("%s%u=Bank %d, Hex 0x%02X\n", attr, slot_num, (code & 0x7F) + 1, code >> 8);
+                printf("%s_%u_%s=Bank %d, Hex 0x%02X\n", attr_prefix, slot_num, attr_suffix, (code & 0x7F) + 1, code >> 8);
 }
 
-static void dmi_memory_product_id(const char *attr, unsigned int slot_num, uint16_t code)
+static void dmi_memory_product_id(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
 {
         /* 7.18.9 */
         /* 7.18.11 */
         if (code != 0)
-                printf("%s%u=0x%04X\n", attr, slot_num, code);
+                printf("%s_%u_%s=0x%04X\n", attr_prefix, slot_num, attr_suffix, code);
 }
 
-static void dmi_memory_size(const char *attr, unsigned int slot_num, u64 code)
+static void dmi_memory_size(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, u64 code)
 {
         /* 7.18.12 */
         /* 7.18.13 */
         if ((code.h == 0xFFFFFFFF && code.l == 0xFFFFFFFF) ||
             (code.h == 0x0 && code.l == 0x0))
                 return;
-        dmi_print_memory_size(attr, slot_num, code, 0);
+        dmi_print_memory_size(attr_prefix, attr_suffix, slot_num, code, 0);
 }
 
 /*
@@ -476,13 +476,13 @@ static void dmi_decode(const struct dmi_header *h)
                 }
                 if (DWORD(data + 0x07) == 0x80000000) {
                         if (h->length >= 0x17)
-                                dmi_print_memory_size("MEMORY_ARRAY_MAX_CAPACITY", -1, QWORD(data + 0x0F), 0);
+                                dmi_print_memory_size("MEMORY_ARRAY", "MAX_CAPACITY", -1, QWORD(data + 0x0F), 0);
                 } else {
                         u64 capacity;
 
                         capacity.h = 0;
                         capacity.l = DWORD(data + 0x07);
-                        dmi_print_memory_size("MEMORY_ARRAY_MAX_CAPACITY", -1, capacity, 1);
+                        dmi_print_memory_size("MEMORY_ARRAY", "MAX_CAPACITY", -1, capacity, 1);
                 }
                 printf("MEMORY_ARRAY_NUM_DEVICES=%u\n", WORD(data + 0x0D));
                 break;
@@ -493,55 +493,55 @@ static void dmi_decode(const struct dmi_header *h)
 
                 log_debug("Memory Device");
                 if (h->length < 0x15) break;
-                dmi_memory_device_width("MEMORY_DEVICE_TOTAL_WIDTH", slot_num, WORD(data + 0x08));
-                dmi_memory_device_width("MEMORY_DEVICE_DATA_WIDTH", slot_num, WORD(data + 0x0A));
+                dmi_memory_device_width("MEMORY_DEVICE", "TOTAL_WIDTH", slot_num, WORD(data + 0x08));
+                dmi_memory_device_width("MEMORY_DEVICE", "DATA_WIDTH", slot_num, WORD(data + 0x0A));
                 if (h->length >= 0x20 && WORD(data + 0x0C) == 0x7FFF)
                         dmi_memory_device_extended_size(slot_num, DWORD(data + 0x1C));
                 else
                         dmi_memory_device_size(slot_num, WORD(data + 0x0C));
                 if (data[0x0E] != 0x02) {
-                        printf("MEMORY_DEVICE_FORM_FACTOR%u=%s\n", slot_num,
+                        printf("MEMORY_DEVICE_%u_FORM_FACTOR=%s\n", slot_num,
                                dmi_memory_device_form_factor(data[0x0E]));
                 }
                 dmi_memory_device_set(slot_num, data[0x0F]);
-                printf("MEMORY_DEVICE_LOCATOR%u=%s\n", slot_num, dmi_string(h, data[0x10]));
-                printf("MEMORY_DEVICE_BANK_LOCATOR%u=%s\n", slot_num, dmi_string(h, data[0x11]));
-                printf("MEMORY_DEVICE_TYPE%u=%s\n", slot_num, dmi_memory_device_type(data[0x12]));
+                printf("MEMORY_DEVICE_%u_LOCATOR=%s\n", slot_num, dmi_string(h, data[0x10]));
+                printf("MEMORY_DEVICE_%u_BANK_LOCATOR=%s\n", slot_num, dmi_string(h, data[0x11]));
+                printf("MEMORY_DEVICE_%u_TYPE=%s\n", slot_num, dmi_memory_device_type(data[0x12]));
                 dmi_memory_device_type_detail(slot_num, WORD(data + 0x13));
                 if (h->length < 0x17) break;
-                dmi_memory_device_speed("MEMORY_DEVICE_SPEED_MTS", slot_num, WORD(data + 0x15));
+                dmi_memory_device_speed("MEMORY_DEVICE", "SPEED_MTS", slot_num, WORD(data + 0x15));
                 if (h->length < 0x1B) break;
-                printf("MEMORY_DEVICE_MANUFACTURER%u=%s\n", slot_num, dmi_string(h, data[0x17]));
-                printf("MEMORY_DEVICE_SERIAL_NUMBER%u=%s\n", slot_num, dmi_string(h, data[0x18]));
-                printf("MEMORY_DEVICE_ASSET_TAG%u=%s\n", slot_num, dmi_string(h, data[0x19]));
-                printf("MEMORY_DEVICE_PART_NUMBER%u=%s\n", slot_num, dmi_string(h, data[0x1A]));
+                printf("MEMORY_DEVICE_%u_MANUFACTURER=%s\n", slot_num, dmi_string(h, data[0x17]));
+                printf("MEMORY_DEVICE_%u_SERIAL_NUMBER=%s\n", slot_num, dmi_string(h, data[0x18]));
+                printf("MEMORY_DEVICE_%u_ASSET_TAG=%s\n", slot_num, dmi_string(h, data[0x19]));
+                printf("MEMORY_DEVICE_%u_PART_NUMBER=%s\n", slot_num, dmi_string(h, data[0x1A]));
                 if (h->length < 0x1C) break;
                 if ((data[0x1B] & 0x0F) != 0)
-                        printf("MEMORY_DEVICE_RANK%u=%u\n", slot_num, data[0x1B] & 0x0F);
+                        printf("MEMORY_DEVICE_%u_RANK=%u\n", slot_num, data[0x1B] & 0x0F);
                 if (h->length < 0x22) break;
-                dmi_memory_device_speed("MEMORY_DEVICE_CONFIGURED_SPEED_MTS", slot_num, WORD(data + 0x20));
+                dmi_memory_device_speed("MEMORY_DEVICE", "CONFIGURED_SPEED_MTS", slot_num, WORD(data + 0x20));
                 if (h->length < 0x28) break;
-                dmi_memory_voltage_value("MEMORY_DEVICE_MINIMUM_VOLTAGE", slot_num, WORD(data + 0x22));
-                dmi_memory_voltage_value("MEMORY_DEVICE_MAXIMUM_VOLTAGE", slot_num, WORD(data + 0x24));
-                dmi_memory_voltage_value("MEMORY_DEVICE_CONFIGURED_VOLTAGE", slot_num, WORD(data + 0x26));
+                dmi_memory_voltage_value("MEMORY_DEVICE", "MINIMUM_VOLTAGE", slot_num, WORD(data + 0x22));
+                dmi_memory_voltage_value("MEMORY_DEVICE", "MAXIMUM_VOLTAGE", slot_num, WORD(data + 0x24));
+                dmi_memory_voltage_value("MEMORY_DEVICE", "CONFIGURED_VOLTAGE", slot_num, WORD(data + 0x26));
                 if (h->length < 0x34) break;
                 dmi_memory_technology(slot_num, data[0x28]);
                 dmi_memory_operating_mode_capability(slot_num, WORD(data + 0x29));
-                printf("MEMORY_DEVICE_FIRMWARE_VERSION%u=%s\n", slot_num, dmi_string(h, data[0x2B]));
-                dmi_memory_manufacturer_id("MEMORY_DEVICE_MODULE_MANUFACTURER_ID", slot_num, WORD(data + 0x2C));
-                dmi_memory_product_id("MEMORY_DEVICE_MODULE_PRODUCT_ID", slot_num, WORD(data + 0x2E));
-                dmi_memory_manufacturer_id("MEMORY_DEVICE_MEMORY_SUBSYSTEM_CONTROLLER_MANUFACTURER_ID",
+                printf("MEMORY_DEVICE_%u_FIRMWARE_VERSION=%s\n", slot_num, dmi_string(h, data[0x2B]));
+                dmi_memory_manufacturer_id("MEMORY_DEVICE", "MODULE_MANUFACTURER_ID", slot_num, WORD(data + 0x2C));
+                dmi_memory_product_id("MEMORY_DEVICE", "MODULE_PRODUCT_ID", slot_num, WORD(data + 0x2E));
+                dmi_memory_manufacturer_id("MEMORY_DEVICE", "MEMORY_SUBSYSTEM_CONTROLLER_MANUFACTURER_ID",
                                            slot_num, WORD(data + 0x30));
-                dmi_memory_product_id("MEMORY_DEVICE_MEMORY_SUBSYSTEM_CONTROLLER_PRODUCT_ID",
+                dmi_memory_product_id("MEMORY_DEVICE", "MEMORY_SUBSYSTEM_CONTROLLER_PRODUCT_ID",
                                       slot_num, WORD(data + 0x32));
                 if (h->length < 0x3C) break;
-                dmi_memory_size("MEMORY_DEVICE_NON_VOLATILE_SIZE", slot_num, QWORD(data + 0x34));
+                dmi_memory_size("MEMORY_DEVICE", "NON_VOLATILE_SIZE", slot_num, QWORD(data + 0x34));
                 if (h->length < 0x44) break;
-                dmi_memory_size("MEMORY_DEVICE_VOLATILE_SIZE", slot_num, QWORD(data + 0x3C));
+                dmi_memory_size("MEMORY_DEVICE", "VOLATILE_SIZE", slot_num, QWORD(data + 0x3C));
                 if (h->length < 0x4C) break;
-                dmi_memory_size("MEMORY_DEVICE_CACHE_SIZE", slot_num, QWORD(data + 0x44));
+                dmi_memory_size("MEMORY_DEVICE", "CACHE_SIZE", slot_num, QWORD(data + 0x44));
                 if (h->length < 0x54) break;
-                dmi_memory_size("MEMORY_DEVICE_LOGICAL_SIZE", slot_num, QWORD(data + 0x4C));
+                dmi_memory_size("MEMORY_DEVICE", "LOGICAL_SIZE", slot_num, QWORD(data + 0x4C));
                 break;
         }
 }
