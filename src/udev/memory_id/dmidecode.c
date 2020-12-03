@@ -144,9 +144,9 @@ static void dmi_print_memory_size(const char *attr_prefix, const char *attr_suff
                 capacity = capacity << 10;
 
         if (slot_num >= 0)
-                printf("%s_%u_%s=%lu\n", attr_prefix, slot_num, attr_suffix, capacity);
+                printf("%s_%u_%s=%"PRIu64"\n", attr_prefix, slot_num, attr_suffix, capacity);
         else
-                printf("%s_%s=%lu\n", attr_prefix, attr_suffix, capacity);
+                printf("%s_%s=%"PRIu64"\n", attr_prefix, attr_suffix, capacity);
 }
 
 /*
@@ -235,7 +235,7 @@ static void dmi_memory_device_extended_size(unsigned int slot_num, uint32_t code
 
         capacity = code * 1024 * 1024;
 
-        printf("MEMORY_DEVICE_%u_SIZE=%lu\n", slot_num, capacity);
+        printf("MEMORY_DEVICE_%u_SIZE=%"PRIu64"\n", slot_num, capacity);
 }
 
 static void dmi_memory_voltage_value(const char *attr_prefix, const char *attr_suffix, unsigned int slot_num, uint16_t code)
