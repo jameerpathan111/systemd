@@ -232,18 +232,8 @@ static void dmi_memory_device_size(unsigned int slot_num, uint16_t code)
 static void dmi_memory_device_extended_size(unsigned int slot_num, uint32_t code)
 {
         uint64_t capacity;
-        code &= 0x7FFFFFFFUL;
 
-        /*
-         * Use the greatest unit for which the exact value can be displayed
-         * as an integer without rounding
-         */
-        if (code & 0x3FFUL)
-                capacity = code * 1024^2;
-        else if (code & 0xFFC00UL)
-                capacity = code * 1024^3;
-        else
-                capacity = code * 1024^4;
+        capacity = code * 1024 * 1024;
 
         printf("MEMORY_DEVICE_%u_SIZE=%lu\n", slot_num, capacity);
 }
