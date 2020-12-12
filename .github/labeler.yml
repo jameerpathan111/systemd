@@ -12,12 +12,16 @@ network:
 udev:
   - src/udev/**/*
   - src/libudev/*
+selinux:
+  - '**/*selinux*'
+apparmor:
+  - '**/*apparmor*'
 meson:
-  - ./**/meson.build
+  - '**/meson.build'
   - meson_option.txt
 busctl:
   - src/busctl/*
-systemctl: 
+systemctl:
   - src/systemctl/*
 journal:
   - src/journal/*
